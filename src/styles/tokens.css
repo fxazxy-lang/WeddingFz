@@ -1,0 +1,44 @@
+:root {
+  /* Palette: champagne gold, ivory, rose gold */
+  --ivory: #fbf7f0;
+  --ivory-deep: #f5eee2;
+  --paper: #fffdf9;
+  --champagne: #c9a96e;
+  --champagne-soft: #efe3cc;
+  --champagne-deep: #85663a; /* champagne for text: 4.9:1 on ivory */
+  --rose: #c08a86;
+  --rose-deep: #93585a; /* rose gold for text: 5.3:1 on ivory */
+  --blush: #f6ebe6;
+  --ink: #3b312a;
+  --ink-soft: #6c5f55;
+  --line: #e7dbc7;
+  --line-soft: #f0e7d8;
+  --danger: #a3433b;
+  --danger-soft: #f8e8e5;
+  --success: #4a7556;
+  --success-soft: #e8f1ea;
+
+  /* Type */
+  --font-display: 'Playfair Display', 'Kantumruy Pro', 'Khmer UI', Georgia, serif;
+  --font-body: 'Inter', 'Kantumruy Pro', 'Khmer UI', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-khmer: 'Kantumruy Pro', 'Khmer UI', 'Khmer OS System', sans-serif;
+  --font-khmer-display: 'Moul', 'Khmer OS Muol Light', 'Kantumruy Pro', serif;
+
+  /* Shape */
+  --radius-sm: 6px;
+  --radius: 12px;
+  --radius-lg: 22px;
+  --shadow-soft: 0 1px 2px rgb(59 49 42 / 0.04), 0 12px 32px -18px rgb(59 49 42 / 0.22);
+  --shadow-lift: 0 2px 4px rgb(59 49 42 / 0.05), 0 24px 48px -24px rgb(59 49 42 / 0.28);
+
+  /* Layout */
+  --container: 1120px;
+  --gutter: clamp(16px, 4vw, 40px);
+  --section-y: clamp(72px, 11vw, 136px);
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Khmer script needs more vertical room for stacked vowels and subscripts. */
+:root:lang(km) {
+  --font-display: 'Kantumruy Pro', 'Khmer UI', 'Playfair Display', serif;
+}

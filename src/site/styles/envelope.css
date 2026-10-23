@@ -1,0 +1,983 @@
+/* =====================================================================
+   Envelope intro: a staggered, cinematic reveal.
+   Timeline after the click (keep in step with EnvelopeIntro.tsx):
+     0.00–0.40s  wax seal dissolves with a soft glow
+     0.30–0.80s  flap folds open (rotateX 180deg)
+     0.70–1.50s  card rises out of the pocket, then glides to the screen centre
+     1.20–2.40s  card content, one item at a time (+0.2s each)
+     2.60s       overlay blurs and dissolves into the landing page
+   ===================================================================== */
+
+:root {
+  --ease-lux: cubic-bezier(0.16, 1, 0.3, 1);
+  --reveal-at: 1.3s;
+  --reveal-step: 0.2s;
+}
+
+/* Keep the page still and its entrance animations waiting behind the envelope */
+.intro-pending,
+.intro-pending body {
+  overflow: hidden;
+}
+.intro-pending .hero__arch,
+.intro-pending .hero__arch-line,
+.intro-pending .hero__finial,
+.intro-pending .hero__content,
+.intro-pending .save-the-date {
+  animation-play-state: paused;
+}
+
+.intro {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  display: grid;
+  place-items: center;
+  padding: 24px 16px;
+  overflow: hidden;
+  background:
+    radial-gradient(60% 50% at 50% 38%, rgb(255 253 248 / 0.95) 0%, rgb(255 253 248 / 0) 70%),
+    radial-gradient(40rem 30rem at 12% 12%, rgb(233 210 168 / 0.45), transparent 70%),
+    radial-gradient(36rem 30rem at 90% 90%, rgb(232 196 186 / 0.4), transparent 70%),
+    /* fine linen weave */
+    repeating-linear-gradient(0deg, rgb(120 96 60 / 0.025) 0 1px, transparent 1px 3px),
+    repeating-linear-gradient(90deg, rgb(120 96 60 / 0.02) 0 1px, transparent 1px 3px),
+    #f5eee3;
+  transition: opacity 1s var(--ease-lux);
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Stage 5: blur and dissolve into the page */
+.intro--leaving {
+  opacity: 0;
+  pointer-events: none;
+}
+.intro__stage {
+  transition:
+    filter 1s var(--ease-lux),
+    transform 1s var(--ease-lux);
+}
+.intro--leaving .intro__stage {
+  filter: blur(12px);
+  transform: scale(1.03);
+}
+.intro--skipping,
+.intro--skipping .intro__stage {
+  transition-duration: 0.55s;
+}
+
+/* ---------- Top-corner controls: language + Skip ---------- */
+.intro__controls {
+  position: absolute;
+  top: max(16px, env(safe-area-inset-top));
+  right: max(16px, env(safe-area-inset-right));
+  z-index: 20;
+  display: flex;
+  gap: 8px;
+}
+.intro__pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 52px;
+  height: 36px;
+  padding: 0 14px;
+  border: 1px solid rgb(201 169 110 / 0.5);
+  border-radius: 999px;
+  background: rgb(255 253 249 / 0.7);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 500;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  transition:
+    opacity 0.3s,
+    background-color 0.2s,
+    transform 0.2s var(--ease-lux);
+}
+.intro__pill:hover {
+  background: #fff;
+}
+.intro__pill:focus-visible {
+  outline: 2px solid var(--champagne-deep);
+  outline-offset: 2px;
+}
+.intro__skip {
+  color: var(--ink-soft);
+  border-color: rgb(201 169 110 / 0.35);
+  background: rgb(255 253 249 / 0.45);
+}
+.intro__skip:hover {
+  color: var(--ink);
+}
+.intro__skip:hover svg {
+  transform: translateX(2px);
+}
+.intro__skip svg {
+  transition: transform 0.2s var(--ease-lux);
+}
+.intro--open .intro__pill:not(.intro__skip) {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ---------- Stage layout ---------- */
+.intro__stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(28px, 6vh, 48px);
+  width: 100%;
+  /* leave headroom for the card rising out of the envelope */
+  padding-top: clamp(40px, 12vh, 120px);
+}
+.intro__kicker {
+  pointer-events: none;
+  font-family: 'Playfair Display', 'Kantumruy Pro', Georgia, serif;
+  font-style: italic;
+  font-size: clamp(17px, 2.4vw, 21px);
+  color: var(--champagne-deep);
+  letter-spacing: 0.02em;
+  transition: opacity 0.35s var(--ease-lux);
+}
+:lang(km) .intro__kicker {
+  pointer-events: none;
+  font-family: var(--font-khmer);
+  font-style: normal;
+}
+.intro--open .intro__kicker,
+.intro--open .intro__hint {
+  opacity: 0;
+  animation: none;
+}
+
+/* ---------- Envelope ---------- */
+.envelope-float {
+  animation: envelope-float 5s ease-in-out infinite;
+}
+.intro--open .envelope-float {
+  animation-play-state: paused;
+}
+@keyframes envelope-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+.envelope {
+  position: relative;
+  width: min(540px, 88vw);
+  aspect-ratio: 3 / 2;
+  perspective: 1600px;
+}
+
+/* Layers, back to front:
+   back (1) · flap once open (2) · card inside (3) · pocket (4) · flap closed (6) · card out (7) · seal (8) · hit area (9) */
+.envelope__back {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: 10px;
+  background:
+    repeating-linear-gradient(0deg, rgb(120 96 60 / 0.035) 0 1px, transparent 1px 3px),
+    linear-gradient(180deg, #ece0c9, #e3d4b8);
+  box-shadow:
+    0 2px 4px rgb(90 64 34 / 0.12),
+    0 30px 60px -20px rgb(90 64 34 / 0.45),
+    0 60px 90px -50px rgb(90 64 34 / 0.4);
+}
+
+.envelope__front {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+}
+.envelope__pocket {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 10px;
+  overflow: visible;
+  filter: drop-shadow(0 -1px 0 rgb(255 255 255 / 0.6));
+}
+.envelope__names {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 9%;
+  text-align: center;
+  color: var(--champagne-deep);
+}
+.envelope__names--en {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-style: italic;
+  font-size: clamp(15px, 2.8vw, 21px);
+}
+.envelope__names--km {
+  font-family: var(--font-khmer-display);
+  font-size: clamp(12px, 2.2vw, 16px);
+  line-height: 1.8;
+}
+
+/* Stage 2: the flap folds up and back in real 3D */
+.envelope__flap {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 58%;
+  z-index: 6;
+  transform-origin: 50% 0;
+  transform: rotateX(0deg);
+  transform-style: preserve-3d;
+  filter: drop-shadow(0 6px 6px rgb(90 64 34 / 0.18));
+}
+.envelope__flap-face {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.envelope__flap-face--back {
+  transform: rotateX(180deg);
+}
+.intro--open .envelope__flap {
+  animation:
+    flap-open 0.5s var(--ease-lux) 0.3s forwards,
+    flap-behind 0.01s linear 0.37s forwards,
+    envelope-sink 0.8s var(--ease-lux) 1.05s forwards;
+}
+@keyframes flap-open {
+  to {
+    transform: rotateX(180deg);
+  }
+}
+@keyframes flap-behind {
+  from {
+    z-index: 6;
+  }
+  to {
+    z-index: 2;
+  }
+}
+
+/* Once the card has left, the envelope sinks and fades away beneath it */
+.intro--open .envelope__back,
+.intro--open .envelope__front {
+  animation: envelope-sink 0.8s var(--ease-lux) 1.05s forwards;
+}
+@keyframes envelope-sink {
+  to {
+    opacity: 0;
+    translate: 0 56px;
+  }
+}
+
+/* ---------- Stage 1: wax seal ---------- */
+.seal {
+  position: absolute;
+  top: 56%;
+  left: 50%;
+  z-index: 8;
+  width: clamp(64px, 15vw, 92px);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+.intro--open .seal {
+  animation: seal-dissolve 0.4s var(--ease-lux) forwards;
+}
+.intro--open .seal__glow {
+  animation: seal-flare 0.45s var(--ease-lux) forwards;
+}
+@keyframes seal-dissolve {
+  to {
+    transform: translate(-50%, -50%) scale(0.82);
+    opacity: 0;
+    filter: blur(1.5px);
+  }
+}
+@keyframes seal-flare {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  45% {
+    transform: scale(1.5);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.8);
+    opacity: 0;
+  }
+}
+.seal__glow {
+  position: absolute;
+  inset: -22%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgb(214 170 110 / 0.55) 0%, rgb(214 170 110 / 0) 65%);
+  animation: seal-glow 2.4s ease-in-out infinite;
+}
+@keyframes seal-glow {
+  0%,
+  100% {
+    transform: scale(0.92);
+    opacity: 0.55;
+  }
+  50% {
+    transform: scale(1.12);
+    opacity: 1;
+  }
+}
+.seal__wax {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  /* slightly uneven edge, like poured wax */
+  border-radius: 52% 48% 50% 50% / 49% 52% 48% 51%;
+  background:
+    radial-gradient(circle at 34% 30%, rgb(255 255 255 / 0.22), transparent 38%),
+    radial-gradient(circle at 50% 50%, #8e2a35 0%, #741d29 55%, #5a1420 100%);
+  box-shadow:
+    inset 0 2px 3px rgb(255 255 255 / 0.18),
+    inset 0 -4px 8px rgb(40 6 12 / 0.45),
+    0 6px 14px -4px rgb(60 10 18 / 0.55),
+    0 2px 3px rgb(60 10 18 / 0.35);
+  transition: transform 0.3s var(--ease-lux);
+}
+.envelope:hover .seal__wax {
+  transform: scale(1.04);
+}
+.seal__ring {
+  display: grid;
+  place-items: center;
+  width: 74%;
+  height: 74%;
+  border-radius: 50%;
+  border: 1.5px solid rgb(232 196 150 / 0.55);
+  box-shadow:
+    inset 0 1px 2px rgb(30 4 8 / 0.5),
+    0 1px 0 rgb(255 255 255 / 0.12);
+}
+.seal__monogram {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-style: italic;
+  font-size: clamp(15px, 3.3vw, 21px);
+  letter-spacing: 0.02em;
+  color: #e9c9a0;
+  text-shadow:
+    0 -1px 0 rgb(30 4 8 / 0.65),
+    0 1px 0 rgb(255 225 190 / 0.35);
+}
+
+/* Whole-envelope click/tap target (removed once opened) */
+.envelope__hit {
+  position: absolute;
+  inset: -3%;
+  z-index: 9;
+  padding: 0;
+  border: 0;
+  border-radius: 14px;
+  background: transparent;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.envelope__hit:focus-visible {
+  outline: 2px solid var(--champagne-deep);
+  outline-offset: 6px;
+}
+
+/* ---------- Stage 3: the invitation card ---------- */
+.invite-card {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: min(380px, 84vw);
+  padding: 24px 22px 22px;
+  border-radius: 12px;
+  text-align: center;
+  background:
+    radial-gradient(120% 60% at 50% 0%, rgb(255 255 255 / 0.8), transparent 70%),
+    repeating-linear-gradient(0deg, rgb(120 96 60 / 0.022) 0 1px, transparent 1px 3px),
+    #fffcf6;
+  box-shadow: 0 8px 20px -12px rgb(90 64 34 / 0.4);
+  opacity: 0;
+  transform-origin: 50% 50%;
+  transform: translate(-50%, -50%) translateY(var(--card-start-y, 0px)) scale(var(--card-s0, 0.4));
+  backface-visibility: hidden;
+  will-change: transform, opacity;
+}
+.invite-card::before {
+  content: '';
+  position: absolute;
+  inset: 8px;
+  border: 1px solid rgb(184 146 79 / 0.55);
+  border-radius: 7px;
+  pointer-events: none;
+}
+.invite-card::after {
+  content: '';
+  position: absolute;
+  inset: 12px;
+  border: 1px solid rgb(184 146 79 / 0.22);
+  border-radius: 5px;
+  pointer-events: none;
+}
+/* The deep shadow lives on its own layer and only fades in (no per-frame shadow repaint) */
+.invite-card__shadow {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  box-shadow:
+    0 40px 70px -30px rgb(90 64 34 / 0.55),
+    0 12px 24px -12px rgb(90 64 34 / 0.25);
+  opacity: 0;
+  pointer-events: none;
+}
+.intro--open .invite-card {
+  animation:
+    card-in 0.4s var(--ease-lux) 0.62s forwards,
+    card-out 1.08s linear 0.62s forwards,
+    card-front 0.01s linear 0.98s forwards;
+}
+.intro--open .invite-card__shadow {
+  animation: card-in 0.7s var(--ease-lux) 1.1s forwards;
+}
+@keyframes card-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+/* Rise out of the pocket → glide to the centre at 95% → settle to full size */
+@keyframes card-out {
+  0% {
+    transform: translate(-50%, -50%) translateY(var(--card-start-y, 0px)) scale(var(--card-s0, 0.4));
+    animation-timing-function: var(--ease-lux);
+  }
+  35% {
+    transform: translate(-50%, -50%) translateY(var(--card-rise-y, -120px)) scale(var(--card-s0, 0.4));
+    animation-timing-function: var(--ease-lux);
+  }
+  80% {
+    transform: translate(-50%, -50%) translate(var(--card-to-x, 0px), var(--card-to-y, 0px)) scale(calc(var(--card-sf, 1) * 0.95));
+    animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1);
+  }
+  100% {
+    transform: translate(-50%, -50%) translate(var(--card-to-x, 0px), var(--card-to-y, 0px)) scale(var(--card-sf, 1));
+  }
+}
+@keyframes card-front {
+  from {
+    z-index: 3;
+  }
+  to {
+    z-index: 7;
+  }
+}
+
+/* ---------- Stage 4: content appears one step at a time (+0.2s each) ---------- */
+.invite-card__item {
+  position: relative;
+  z-index: 1;
+  opacity: 0;
+  backface-visibility: hidden;
+}
+.intro--open .invite-card__item {
+  animation-duration: 0.8s;
+  animation-timing-function: var(--ease-lux);
+  animation-delay: calc(var(--reveal-at) + var(--i, 0) * var(--reveal-step));
+  animation-fill-mode: both;
+}
+.intro--open .invite-card__item--photo {
+  animation-name: step-photo;
+  animation-duration: 0.9s;
+}
+.intro--open .invite-card__item--float {
+  animation-name: step-float;
+}
+.intro--open .invite-card__item--names {
+  animation-name: step-names;
+  animation-duration: 0.9s;
+}
+.intro--open .invite-card__item--fade {
+  animation-name: step-fade;
+}
+.invite-card__item--pop {
+  margin-top: 4px;
+}
+.intro--open .invite-card__item--pop {
+  animation-name: step-pop;
+  animation-duration: 0.6s;
+  /* a little spring overshoot */
+  animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.intro--open .invite-card__item--glide {
+  animation-name: step-glide;
+}
+@keyframes step-photo {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes step-float {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes step-names {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes step-fade {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes step-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes step-glide {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* 1 · arched photo */
+.invite-card__photo {
+  width: min(56%, 26vh);
+  margin-inline: auto;
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+  border-radius: 999px 999px 12px 12px;
+  box-shadow:
+    0 0 0 4px #fffcf6,
+    0 0 0 5px rgb(184 146 79 / 0.55),
+    0 14px 24px -14px rgb(90 64 34 / 0.55);
+}
+.invite-card__item--photo {
+  width: 100%;
+}
+.invite-card__photo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 30%;
+}
+.intro--open .invite-card__photo img {
+  animation: photo-settle 1.6s var(--ease-lux) var(--reveal-at) both;
+}
+@keyframes photo-settle {
+  from {
+    transform: scale(1.06);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+/* 2 · tagline and 3 · names in warm gold */
+.invite-card__invite {
+  max-width: 30ch;
+  margin-top: 4px;
+  font-size: 11.5px;
+  line-height: 1.6;
+  letter-spacing: 0.02em;
+  color: var(--ink-soft);
+}
+.invite-card__names-wrap {
+  display: grid;
+  gap: 2px;
+}
+.invite-card__names {
+  line-height: 1.3;
+  background: linear-gradient(100deg, #8a6a3a 0%, #c9a96e 30%, #a9834a 55%, #d9bd84 80%, #8a6a3a 100%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.intro--open .invite-card__names {
+  animation: gold-sheen 2.6s ease-in-out calc(var(--reveal-at) + 2 * var(--reveal-step) + 0.15s) both;
+}
+@keyframes gold-sheen {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: 0% 0;
+  }
+}
+.invite-card__names--en {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-style: italic;
+  font-size: 25px;
+}
+.invite-card__names--km {
+  font-family: var(--font-khmer-display);
+  font-size: 18px;
+  line-height: 1.9;
+}
+.invite-card__and {
+  color: var(--rose-deep);
+  -webkit-text-fill-color: var(--rose-deep);
+}
+.invite-card__alt {
+  font-size: 12.5px;
+  color: var(--ink-soft);
+}
+.invite-card__alt--en {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-style: italic;
+}
+.invite-card__alt--km {
+  font-family: var(--font-khmer);
+}
+
+/* 4 · dates and both venues */
+.invite-card__when {
+  display: grid;
+  gap: 3px;
+  padding-top: 10px;
+  border-top: 1px solid rgb(184 146 79 / 0.4);
+  min-width: 70%;
+}
+.invite-card__date {
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  color: var(--ink);
+}
+.invite-card__venue {
+  font-size: 12px;
+  color: var(--ink-soft);
+  white-space: pre-wrap;
+}
+
+/* 5 · Save The Date pill and 6 · RSVP */
+.invite-card__badge {
+  padding: 4px 12px;
+  border: 1px solid rgb(184 146 79 / 0.55);
+  border-radius: 999px;
+  background: rgb(239 227 204 / 0.45);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--champagne-deep);
+}
+:lang(km) .invite-card__badge {
+  letter-spacing: 0.02em;
+}
+.invite-card__rsvp {
+  min-height: 40px;
+  padding: 0 22px;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #a5804a, #85663a);
+  color: #fffaf0;
+  font-size: 13.5px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  box-shadow: 0 8px 18px -10px rgb(90 64 34 / 0.7);
+}
+.invite-card__rsvp:focus-visible {
+  outline: 2px solid var(--champagne-deep);
+  outline-offset: 3px;
+}
+.invite-card__rsvp {
+  position: relative;
+}
+/* Soft breathing pulse once everything is shown: the button swells gently and a gold ring
+   radiates out. Transform and opacity only, so it stays smooth on phones. */
+.invite-card__rsvp::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 1.5px solid rgb(201 169 110 / 0.8);
+  opacity: 0;
+  pointer-events: none;
+}
+.intro--revealed .invite-card__rsvp {
+  animation: rsvp-breathe 2.4s ease-in-out infinite;
+}
+.intro--revealed .invite-card__rsvp::after {
+  animation: rsvp-ring 2.4s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+@keyframes rsvp-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.04);
+  }
+}
+@keyframes rsvp-ring {
+  0% {
+    transform: scale(1);
+    opacity: 0.75;
+  }
+  70%,
+  100% {
+    transform: scale(1.25, 1.6);
+    opacity: 0;
+  }
+}
+.invite-card__rsvp:active {
+  transform: scale(0.97);
+}
+.intro--revealed {
+  cursor: pointer;
+}
+.intro--revealed .invite-card__rsvp,
+.intro--revealed .intro__pill {
+  cursor: pointer;
+}
+
+/* ---------- Hint ---------- */
+.intro__hint {
+  pointer-events: none;
+  font-size: 14px;
+  letter-spacing: 0.04em;
+  color: var(--champagne-deep);
+  animation: hint-float 2.4s ease-in-out infinite;
+  transition: opacity 0.3s;
+}
+.intro__hint-touch {
+  display: none;
+}
+@media (hover: none) {
+  .intro__hint-mouse {
+    display: none;
+  }
+  .intro__hint-touch {
+    display: inline;
+  }
+}
+@keyframes hint-float {
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.75;
+  }
+  50% {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
+}
+
+/* ---------- Floating music button ---------- */
+.music-toggle {
+  position: fixed;
+  right: max(18px, env(safe-area-inset-right));
+  bottom: max(18px, env(safe-area-inset-bottom));
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  padding: 0;
+  border: 1px solid rgb(201 169 110 / 0.6);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 35% 30%, rgb(255 255 255 / 0.9), transparent 60%),
+    rgb(251 246 236 / 0.88);
+  color: var(--champagne-deep);
+  box-shadow:
+    0 12px 26px -14px rgb(90 64 34 / 0.55),
+    inset 0 0 0 3px rgb(255 253 249 / 0.7),
+    inset 0 0 0 4px rgb(201 169 110 / 0.22);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  cursor: pointer;
+  transition:
+    transform 0.35s var(--ease-lux),
+    box-shadow 0.35s var(--ease-lux),
+    opacity 0.6s var(--ease-lux);
+  -webkit-tap-highlight-color: transparent;
+}
+.music-toggle > * {
+  grid-area: 1 / 1;
+}
+.music-toggle:hover {
+  transform: translateY(-2px) scale(1.04);
+  box-shadow:
+    0 16px 30px -14px rgb(90 64 34 / 0.6),
+    inset 0 0 0 3px rgb(255 253 249 / 0.7),
+    inset 0 0 0 4px rgb(201 169 110 / 0.35);
+}
+.music-toggle:active {
+  transform: scale(0.95);
+}
+.music-toggle:focus-visible {
+  outline: 2px solid var(--champagne-deep);
+  outline-offset: 4px;
+}
+.intro-pending .music-toggle {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* The note turns slowly while playing and stops exactly where it is when paused */
+.music-toggle__disc {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  animation: music-spin 8s linear infinite;
+  animation-play-state: paused;
+  transition:
+    color 0.4s,
+    opacity 0.4s;
+}
+.music-toggle.is-playing .music-toggle__disc {
+  animation-play-state: running;
+}
+.music-toggle.is-paused .music-toggle__disc {
+  color: var(--champagne-deep);
+}
+@keyframes music-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Soft gold rings pulsing outward while playing */
+.music-toggle__waves {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.music-toggle__waves span {
+  position: absolute;
+  inset: -1px;
+  border: 1px solid rgb(201 169 110 / 0.7);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgb(214 178 118 / 0) 55%, rgb(214 178 118 / 0.22) 100%);
+  opacity: 0;
+  will-change: transform, opacity;
+}
+.music-toggle.is-playing .music-toggle__waves span {
+  animation: music-wave 3s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+.music-toggle.is-playing .music-toggle__waves span:nth-child(2) {
+  animation-delay: 1.5s;
+}
+@keyframes music-wave {
+  0% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1.8);
+    opacity: 0;
+  }
+}
+
+/* Muted: a slash draws across the note */
+.music-toggle__slash {
+  pointer-events: none;
+  overflow: visible;
+}
+.music-toggle__slash line {
+  stroke-linecap: round;
+  stroke-dasharray: 22;
+  stroke-dashoffset: 22;
+  transition: stroke-dashoffset 0.35s var(--ease-lux);
+}
+.music-toggle__slash-gap {
+  stroke: #fbf6ec;
+  stroke-width: 4.5;
+}
+.music-toggle__slash-line {
+  stroke: var(--champagne-deep);
+  stroke-width: 1.9;
+}
+.music-toggle.is-paused .music-toggle__slash line {
+  stroke-dashoffset: 0;
+}
+
+/* ---------- Small screens and reduced motion ---------- */
+@media (max-width: 480px) {
+  .intro__stage {
+    padding-top: clamp(60px, 18vh, 160px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .envelope-float,
+  .seal__glow,
+  .intro__hint,
+  .music-toggle__disc,
+  .music-toggle__waves span {
+    animation: none !important;
+  }
+  /* Skip the choreography: the card appears at once, then the overlay fades */
+  .intro--open *,
+  .intro--open *::before {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0s !important;
+    animation-iteration-count: 1 !important;
+  }
+  .intro--leaving .intro__stage {
+    filter: none;
+    transform: none;
+  }
+}

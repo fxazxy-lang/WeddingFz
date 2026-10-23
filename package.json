@@ -1,0 +1,33 @@
+{
+  "name": "tango-rothanakpanha-wedding",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Bilingual (English / Khmer) wedding website with RSVP, guestbook and admin dashboard.",
+  "type": "module",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "build": "node scripts/build.mjs",
+    "start": "node --disable-warning=ExperimentalWarning dist/server.js",
+    "seed": "tsx scripts/seed.ts",
+    "clear-sample": "tsx scripts/clear.ts",
+    "clear-all": "tsx scripts/clear.ts --all",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "jszip": "^3.10.1",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "esbuild": "^0.28.0",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.0"
+  }
+}

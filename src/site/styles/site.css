@@ -1,0 +1,299 @@
+/* ---------- Shared site chrome: nav, buttons, headings, footer ---------- */
+
+.skip-link {
+  position: absolute;
+  left: 16px;
+  top: -48px;
+  z-index: 100;
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--ink);
+  color: var(--ivory);
+  text-decoration: none;
+}
+.skip-link:focus {
+  top: 12px;
+}
+
+/* Nav */
+.nav {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 50;
+  transition: background-color 0.3s var(--ease), border-color 0.3s var(--ease);
+  border-bottom: 1px solid transparent;
+}
+.nav--solid {
+  background: rgb(251 247 240 / 0.92);
+  border-bottom-color: var(--line);
+  -webkit-backdrop-filter: saturate(1.2) blur(10px);
+  backdrop-filter: saturate(1.2) blur(10px);
+}
+.nav__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  height: 64px;
+}
+.nav__monogram {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-style: italic;
+  font-size: 22px;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.nav__links {
+  display: flex;
+  gap: clamp(16px, 2.4vw, 32px);
+}
+.nav__links a {
+  position: relative;
+  font-size: 14px;
+  color: var(--ink-soft);
+  text-decoration: none;
+  padding: 6px 0;
+  transition: color 0.2s;
+}
+.nav__links a::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: var(--champagne);
+  transform: scaleX(0);
+  transition: transform 0.3s var(--ease);
+}
+.nav__links a:hover {
+  color: var(--ink);
+}
+.nav__links a:hover::after {
+  transform: scaleX(1);
+}
+.nav__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.nav__lang {
+  min-width: 52px;
+  height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--paper);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink);
+  transition: border-color 0.2s;
+}
+.nav__lang:hover {
+  border-color: var(--champagne);
+}
+.nav__menu {
+  display: none;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  position: relative;
+}
+.nav__menu span {
+  position: absolute;
+  left: 11px;
+  right: 11px;
+  height: 1.5px;
+  background: var(--ink);
+  transition: transform 0.25s var(--ease), top 0.25s var(--ease);
+}
+.nav__menu span:first-child {
+  top: 15px;
+}
+.nav__menu span:last-child {
+  top: 23px;
+}
+.nav__menu[aria-expanded='true'] span:first-child {
+  top: 19px;
+  transform: rotate(45deg);
+}
+.nav__menu[aria-expanded='true'] span:last-child {
+  top: 19px;
+  transform: rotate(-45deg);
+}
+
+@media (max-width: 880px) {
+  .nav__menu {
+    display: block;
+  }
+  .nav__links {
+    position: absolute;
+    top: 64px;
+    left: 0;
+    right: 0;
+    flex-direction: column;
+    gap: 0;
+    padding: 8px var(--gutter) 20px;
+    background: var(--ivory);
+    border-bottom: 1px solid var(--line);
+    visibility: hidden;
+    opacity: 0;
+    transform: translateY(-8px);
+    transition: opacity 0.25s var(--ease), transform 0.25s var(--ease), visibility 0.25s;
+  }
+  .nav__links.is-open {
+    visibility: visible;
+    opacity: 1;
+    transform: none;
+  }
+  .nav__links a {
+    font-size: 17px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .nav__links a::after {
+    display: none;
+  }
+}
+
+/* Buttons */
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 26px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  text-decoration: none;
+  transition: background-color 0.2s, border-color 0.2s, color 0.2s, transform 0.15s;
+}
+.button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+.button:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+.button--primary {
+  background: var(--champagne-deep);
+  color: #fffdf9;
+}
+.button--primary:hover:not(:disabled) {
+  background: #6f5430;
+}
+.button--ghost {
+  background: transparent;
+  border-color: var(--line);
+  color: var(--champagne-deep);
+  min-height: 42px;
+  padding: 0 18px;
+  font-size: 14px;
+}
+.button--ghost:hover:not(:disabled) {
+  border-color: var(--champagne);
+  background: var(--paper);
+}
+.button--block {
+  width: 100%;
+}
+.link-button {
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--champagne-deep);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* Section headings */
+.section {
+  padding-block: var(--section-y);
+}
+.section-heading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 14px;
+  margin-bottom: clamp(40px, 6vw, 64px);
+}
+.section-heading__mark {
+  color: var(--champagne);
+}
+.section-heading__title {
+  font-size: clamp(32px, 5vw, 46px);
+  letter-spacing: -0.01em;
+}
+:lang(km) .section-heading__title {
+  font-size: clamp(26px, 4vw, 36px);
+  letter-spacing: 0;
+}
+.section-heading__intro {
+  max-width: 56ch;
+  color: var(--ink-soft);
+  font-size: 17px;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--champagne);
+}
+.divider__line {
+  flex: 1;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.6;
+}
+
+/* Footer */
+.footer {
+  background: var(--ink);
+  color: #efe6d8;
+  padding: 72px 0 56px;
+}
+.footer__inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 8px;
+}
+.footer__mark {
+  color: var(--champagne);
+  margin-bottom: 8px;
+}
+.footer__thanks {
+  font-size: 14px;
+  color: #c9bba8;
+}
+.footer__names {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-style: italic;
+  font-size: clamp(28px, 4vw, 36px);
+  color: #fffdf9;
+}
+.footer__names:lang(km) {
+  font-family: var(--font-khmer-display);
+  font-style: normal;
+  font-size: clamp(20px, 3vw, 26px);
+  line-height: 1.8;
+}
+.footer__date {
+  color: var(--champagne);
+}
+.footer__note {
+  margin-top: 16px;
+  font-size: 14px;
+  color: #c9bba8;
+}
